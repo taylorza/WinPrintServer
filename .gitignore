@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+/WinPrintServer/x64/Debug
+/x64/Debug
+/.vs
