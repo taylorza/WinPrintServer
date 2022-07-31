@@ -5,6 +5,7 @@
 #include <WinSock2.h>
 #include <stdarg.h>
 
+LPCWSTR dataType;
 std::wstring printerName = L"EPSON098CEF (WF-3520 Series)";
 int printerPort = 9100;
 
@@ -72,6 +73,43 @@ int wmain(int argc, wchar_t* argv[])
     SOCKET clientSocket = INVALID_SOCKET;
     HANDLE hPrinter = INVALID_HANDLE_VALUE;
 
+    if (!OpenPrinter(const_cast<LPWSTR>(printerName.c_str()), &hPrinter, NULL))
+    {
+        logFatal(L"printer not available", GetLastError());
+    }
+
+    DWORD cb;
+    DWORD lerr;
+    BOOL succeeded = GetPrinterDriver(hPrinter, NULL, 8, NULL, 0, &cb);
+    if (!succeeded) 
+    {
+        lerr = GetLastError();
+        if (lerr != ERROR_INSUFFICIENT_BUFFER)
+        {
+            logFatal(L"failed to get printer driver", lerr);
+            ClosePrinter(hPrinter);
+        }
+    }
+    
+    BYTE *pdiBuffer = new BYTE[cb];
+    succeeded = GetPrinterDriver(hPrinter, NULL, 8, pdiBuffer, cb, &cb);
+    if (!succeeded)
+    {
+        logFatal(L"failed to get printer driver", GetLastError());
+        ClosePrinter(hPrinter);
+    }
+    DRIVER_INFO_8* pdi8 = (DRIVER_INFO_8*)pdiBuffer;
+    if ((pdi8->dwPrinterDriverAttributes & PRINTER_DRIVER_XPS) != 0)
+    {
+        dataType = L"XPS_PASS";
+    }
+    else
+    {
+        dataType = L"RAW";
+    }  
+    delete[]pdiBuffer;
+    ClosePrinter(hPrinter);
+
     log(L"Print Server Started for '%s'", printerName.c_str());
     while (listen(serverSocket, 5) != SOCKET_ERROR)
     {
@@ -87,7 +125,7 @@ int wmain(int argc, wchar_t* argv[])
         DOC_INFO_1 di{};
         di.pDocName = const_cast<LPWSTR>(L"RAW Print Job");
         di.pOutputFile = NULL;
-        di.pDatatype = const_cast<LPWSTR>(L"XPS_PASS");
+        di.pDatatype = const_cast<LPWSTR>(dataType);
 
         if (!OpenPrinter(const_cast<LPWSTR>(printerName.c_str()), &hPrinter, NULL))
         {
@@ -158,7 +196,7 @@ void log(LPCWSTR format, ...)
 
 void showUsage()
 {
-    log(L"WinPrintServer v1.0\r\n");
+    log(L"WinPrintServer v1.1\r\n");
     log(L"WinPrintServer [options] [printername]");
     log(L"  -h           Show this help information");
     log(L"  printername  The name of the printer to print. If not specified the default printer is used");
