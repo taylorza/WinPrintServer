@@ -35,3 +35,4 @@
 /.vs
 /WinPrintServer/x64/Release
 /x64/Release
+/WinPrintServer/Release/WinPrintServer.tlog
