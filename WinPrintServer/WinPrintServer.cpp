@@ -196,7 +196,11 @@ void log(LPCWSTR format, ...)
 
 void showUsage()
 {
-    log(L"WinPrintServer v1.1\r\n");
+#ifdef _WIN64
+    log(L"WinPrintServer v1.1 (64Bit)\r\n");
+#else
+    log(L"WinPrintServer v1.1 (32bit)\r\n");
+#endif
     log(L"WinPrintServer [options] [printername]");
     log(L"  -h           Show this help information");
     log(L"  printername  The name of the printer to print. If not specified the default printer is used");
